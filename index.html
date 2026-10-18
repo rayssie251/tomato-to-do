@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>番茄待辦</title>
+<style>
+:root{--bg:#fde8ec;--card:#fffdfb;--ink:#4a2f3a;--muted:#8d6b78;--red:#ff5a4d;--mint:#d9f2e3;--butter:#ffe9a8;--soft:#fff0f2;--shadow:#4a2f3a;--track:#f6cfd6}
+:root[data-theme="dark"]{--bg:#231a2b;--card:#33273d;--ink:#f7e9ef;--muted:#c4a8b6;--red:#ff6f62;--mint:#2f5a47;--butter:#6b5a22;--soft:#41314d;--shadow:#0e0913;--track:#54405f}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--ink);font-family:"Chalkboard SE","Marker Felt","Comic Sans MS","Noto Sans TC","PingFang TC","Microsoft JhengHei",sans-serif;line-height:1.5;padding:20px 16px 48px;transition:background .3s}
+.wrap{max-width:940px;margin:0 auto}
+header{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:18px}
+h1{margin:0;font-size:2rem;letter-spacing:.04em;transform:rotate(-1.5deg)}
+.tools{display:flex;gap:8px}
+.box{background:var(--card);border:3px solid var(--ink);border-radius:26px 14px 28px 12px/14px 26px 12px 28px;box-shadow:5px 5px 0 var(--shadow);padding:18px}
+button{font:inherit;color:var(--ink);cursor:pointer;background:var(--butter);border:3px solid var(--ink);border-radius:18px 10px 20px 10px/10px 18px 10px 20px;padding:6px 14px;box-shadow:3px 3px 0 var(--shadow);transition:transform .1s,box-shadow .1s}
+button:hover{transform:translate(-1px,-1px)}
+button:active{transform:translate(3px,3px);box-shadow:0 0 0 var(--shadow)}
+button:focus-visible,input:focus-visible{outline:3px dashed var(--red);outline-offset:3px}
+button:disabled{opacity:.5;cursor:not-allowed}
+.primary{background:var(--red);color:#fff;font-size:1.15rem;padding:8px 28px}
+.stats{display:flex;gap:12px;margin-bottom:18px;flex-wrap:wrap}
+.stat{flex:1;min-width:140px;text-align:center;padding:10px}
+.stat b{display:block;font-size:1.9rem;line-height:1.2}
+.stat span{color:var(--muted);font-size:.9rem}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:20px;align-items:start}
+@media(max-width:760px){.grid{grid-template-columns:1fr}}
+h2{margin:0 0 12px;font-size:1.25rem}
+.timer{text-align:center}
+.ring{position:relative;width:min(100%,250px);aspect-ratio:1;margin:0 auto 6px}
+.ring>svg{position:absolute;inset:0;width:100%;height:100%}
+.ring .tom{inset:12%;width:76%;height:76%}
+.ring.run .tom{animation:bob 1.6s ease-in-out infinite}
+@keyframes bob{50%{transform:translateY(-6px) rotate(2deg)}}
+.time{font-size:3rem;font-weight:700;letter-spacing:.06em;font-variant-numeric:tabular-nums}
+.focus{min-height:1.6em;color:var(--muted);margin-bottom:10px}
+.btns{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
+.test{display:block;margin-top:14px;font-size:.85rem;color:var(--muted)}
+.add{display:flex;gap:8px;margin-bottom:8px}
+.hint{margin:0 0 12px;color:var(--muted);font-size:.88rem}
+.pick{display:flex;align-items:center;gap:3px;font-size:.85rem;cursor:pointer;white-space:nowrap}
+input[type=text]{flex:1;min-width:0;font:inherit;color:var(--ink);background:var(--soft);border:3px solid var(--ink);border-radius:16px 8px 16px 8px;padding:7px 12px}
+ul{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px}
+li{display:flex;flex-wrap:wrap;align-items:center;gap:8px;padding:8px 10px;background:var(--soft);border:2px dashed var(--ink);border-radius:14px 8px 14px 8px}
+li.sel{background:var(--mint);border-style:solid}
+li input{width:20px;height:20px;accent-color:var(--red);flex:none}
+li .t{flex:1;min-width:90px;word-break:break-word}
+li.done .t{text-decoration:line-through;opacity:.55}
+li .n{white-space:nowrap;font-size:.9rem}
+li button{padding:2px 9px;font-size:.85rem;box-shadow:2px 2px 0 var(--shadow)}
+.empty{text-align:center;color:var(--muted);padding:18px 0}
+.skins{margin-top:20px}
+.sgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:12px}
+.skin{display:flex;flex-direction:column;align-items:center;gap:2px;padding:10px 6px;background:var(--soft);font-size:.9rem}
+.skin svg{width:80px;height:80px}
+.skin.lock svg{filter:brightness(0) opacity(.25)}
+.skin.on{background:var(--mint)}
+.skin small{color:var(--muted)}
+.bar{height:16px;border:3px solid var(--ink);border-radius:10px;background:var(--track);overflow:hidden;margin:4px 0 14px}
+.bar i{display:block;height:100%;background:var(--red);transition:width .4s}
+#toast{position:fixed;left:50%;bottom:28px;transform:translate(-50%,120px);background:var(--ink);color:var(--card);padding:10px 20px;border-radius:20px;transition:transform .35s;z-index:9;max-width:90%;text-align:center}
+#toast.show{transform:translate(-50%,0)}
+.conf{position:fixed;top:-30px;font-size:1.6rem;pointer-events:none;z-index:8;animation:fall 2.2s ease-in forwards}
+@keyframes fall{to{transform:translateY(110vh) rotate(540deg);opacity:.8}}
+@media(prefers-reduced-motion:reduce){.ring.run .tom,.conf{animation:none}.conf{display:none}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>番茄待辦</h1>
+    <div class="tools">
+      <button id="muteBtn" type="button" aria-label="切換音效"></button>
+      <button id="themeBtn" type="button" aria-label="切換淺色或深色模式"></button>
+    </div>
+  </header>
+
+  <div class="stats">
+    <div class="box stat"><b id="sToday">0</b><span>今天完成的番茄</span></div>
+    <div class="box stat"><b id="sTotal">0</b><span>累積番茄</span></div>
+    <div class="box stat"><b id="sDone">0 / 0</b><span>已完成任務</span></div>
+  </div>
+
+  <div class="grid">
+    <section class="box timer" aria-label="番茄鐘">
+      <div class="ring" id="ring">
+        <svg viewBox="0 0 220 220" aria-hidden="true">
+          <circle cx="110" cy="110" r="104" fill="none" stroke="var(--track)" stroke-width="8"/>
+          <circle id="prog" cx="110" cy="110" r="104" fill="none" stroke="var(--red)" stroke-width="8" stroke-linecap="round" stroke-dasharray="653.45" stroke-dashoffset="0" transform="rotate(-90 110 110)"/>
+        </svg>
+        <svg class="tom" id="tom" viewBox="0 10 200 175" aria-hidden="true"></svg>
+      </div>
+      <div class="time" id="time" role="timer">25:00</div>
+      <div class="focus" id="focus"></div>
+      <div class="btns">
+        <button id="startBtn" class="primary" type="button">開始專注</button>
+        <button id="resetBtn" type="button">重設</button>
+      </div>
+      <label class="test"><input type="checkbox" id="testBox"> 測試模式（只倒數 10 秒，方便展示）</label>
+    </section>
+
+    <section class="box" aria-label="待辦清單">
+      <h2>今天要做什麼？</h2>
+      <div class="add">
+        <input type="text" id="inp" placeholder="輸入任務，按 Enter 可連續新增" maxlength="60" autocomplete="off" aria-label="新任務">
+        <button type="button" id="addBtn">新增</button>
+      </div>
+      <p class="hint">可以新增多個任務。開始前，先勾選要做的那一個「執行」，番茄會記在它身上。</p>
+      <ul id="list"></ul>
+    </section>
+  </div>
+
+  <section class="box skins" aria-label="番茄皮膚">
+    <h2>番茄皮膚收藏</h2>
+    <div id="next"></div>
+    <div class="bar"><i id="barFill"></i></div>
+    <div class="sgrid" id="sgrid"></div>
+  </section>
+</div>
+<div id="toast" role="status"></div>
+
+<script>
+const KEY='tomato-todo-v1';
+const SKINS=[
+  {id:'classic',name:'經典番茄',need:0},
+  {id:'hat',name:'紳士番茄',need:3},
+  {id:'heart',name:'愛心眼番茄',need:8},
+  {id:'cool',name:'墨鏡酷番茄',need:15},
+  {id:'gold',name:'黃金番茄',need:30}
+];
+let S={tasks:[],sel:null,total:0,days:{},skin:'classic',theme:null,mute:false,test:false};
+try{Object.assign(S,JSON.parse(localStorage.getItem(KEY)||'{}'))}catch(e){}
+const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}};
+const $=id=>document.getElementById(id);
+const esc=s=>s.replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const today=()=>{const d=new Date();return d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate()};
+const skinOf=id=>SKINS.find(s=>s.id===id);
+if(!skinOf(S.skin)||skinOf(S.skin).need>S.total)S.skin='classic';
+
+/* ---------- 番茄插圖 ---------- */
+function tomato(id){
+  const gold=id==='gold',body=gold?'#f7c331':'#ff6b5e',K='#4a2f3a';
+  const eye=x=>id==='heart'
+    ?`<path transform="translate(${x},110) scale(1.4)" d="M0 6C-10-2-5-10 0-4C5-10 10-2 0 6Z" fill="#ff2f6d"/>`
+    :`<circle cx="${x}" cy="110" r="6" fill="${K}"/><circle cx="${x+2}" cy="108" r="2" fill="#fff"/>`;
+  const eyes=id==='cool'
+    ?`<g fill="#2b2230"><rect x="58" y="98" width="38" height="23" rx="9"/><rect x="104" y="98" width="38" height="23" rx="9"/><rect x="94" y="104" width="12" height="4"/></g><path d="M66 104l10 0M112 104l10 0" stroke="#fff" stroke-opacity=".6" stroke-width="3" stroke-linecap="round"/>`
+    :eye(76)+eye(124);
+  const hat=id==='hat'
+    ?`<g stroke="${K}" stroke-width="3" stroke-linejoin="round"><rect x="76" y="12" width="48" height="34" rx="5" fill="#3b3350"/><rect x="76" y="32" width="48" height="8" fill="#ff8fb3"/><rect x="64" y="44" width="72" height="9" rx="4" fill="#3b3350"/></g>`:'';
+  const spark=gold?`<text x="20" y="64" font-size="22">✨</text><text x="156" y="150" font-size="20">✨</text>`:'';
+  return `<path d="M100 54C142 46 178 72 173 114C168 154 134 180 100 178C66 180 32 154 27 114C22 72 58 46 100 54Z" fill="${body}" stroke="${K}" stroke-width="4" stroke-linejoin="round"/>
+  <path d="M50 94Q54 72 74 66" stroke="#fff" stroke-opacity=".55" stroke-width="7" fill="none" stroke-linecap="round"/>
+  <path d="M100 54C84 36 66 42 62 50C74 50 86 54 100 54ZM100 54C116 36 134 42 138 50C126 50 114 54 100 54ZM100 54C96 42 98 32 104 26C106 38 104 48 100 54Z" fill="#6cc08b" stroke="${K}" stroke-width="3" stroke-linejoin="round"/>
+  ${hat}${eyes}
+  <circle cx="58" cy="132" r="9" fill="#ff9aa2" opacity=".65"/><circle cx="142" cy="132" r="9" fill="#ff9aa2" opacity=".65"/>
+  <path d="M86 134Q100 150 114 134" stroke="${K}" stroke-width="4" fill="none" stroke-linecap="round"/>${spark}`;
+}
+
+/* ---------- 計時器 ---------- */
+let running=false,endAt=0,remain=1500000,tick=null,focusId=null,selId=null,actx=null;
+const dur=()=>(S.test?10:1500)*1000;
+const busy=()=>running||remain<dur();
+function startTimer(){
+  if(running)return;
+  if(!S.tasks.some(t=>t.id===selId)){toast(S.tasks.length?'請先在清單勾選要「執行」的任務':'請先新增任務，再勾選要執行的任務');return}
+  try{actx=actx||new (window.AudioContext||window.webkitAudioContext)();if(actx.state==='suspended')actx.resume()}catch(e){}
+  endAt=Date.now()+remain;running=true;focusId=selId;
+  tick=setInterval(loop,250);renderTimer();renderTasks();
+}
+function pauseTimer(){
+  if(!running)return;
+  clearInterval(tick);remain=Math.max(0,endAt-Date.now());running=false;renderTimer();renderTasks();
+}
+function resetTimer(){
+  clearInterval(tick);running=false;remain=dur();focusId=null;renderTimer();renderTasks();
+}
+function loop(){
+  remain=endAt-Date.now();
+  if(remain<=0)finish();else renderTimer();
+}
+function finish(){
+  clearInterval(tick);running=false;
+  const before=S.total;
+  S.total++;S.days[today()]=(S.days[today()]||0)+1;
+  const t=S.tasks.find(x=>x.id===focusId);
+  if(t)t.pomos=(t.pomos||0)+1;
+  const unlocked=SKINS.find(s=>s.need===S.total&&s.need>before);
+  focusId=null;remain=dur();save();
+  beep([[880,.25],[1175,.25],[1480,.6]]);
+  toast(t?`完成一個番茄！「${t.text}」累積 ${t.pomos} 顆`:'完成一個番茄！休息一下吧');
+  if(unlocked)setTimeout(()=>{beep([[523,.15],[659,.15],[784,.15],[1047,.6]]);confetti();toast(`解鎖新皮膚：${unlocked.name}！`)},1800);
+  renderAll();
+}
+function beep(notes){
+  if(S.mute||!actx)return;
+  let t=actx.currentTime;
+  notes.forEach(([f,d])=>{
+    const o=actx.createOscillator(),g=actx.createGain();
+    o.type='sine';o.frequency.value=f;o.connect(g);g.connect(actx.destination);
+    g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(.35,t+.02);g.gain.exponentialRampToValueAtTime(.0001,t+d);
+    o.start(t);o.stop(t+d+.05);t+=d*.9;
+  });
+}
+
+/* ---------- 畫面 ---------- */
+const mmss=ms=>{const s=Math.ceil(ms/1000);return String(Math.floor(s/60)).padStart(2,'0')+':'+String(s%60).padStart(2,'0')};
+function renderTimer(){
+  $('time').textContent=mmss(remain);
+  $('prog').style.strokeDashoffset=653.45*(1-remain/dur());
+  $('ring').classList.toggle('run',running);
+  $('startBtn').textContent=running?'暫停':(remain<dur()?'繼續專注':'開始專注');
+  $('testBox').disabled=running||remain<dur();
+  const t=S.tasks.find(x=>x.id===(busy()?focusId:selId));
+  $('focus').textContent=t?`${busy()?'專注中':'準備專注'}：${t.text}`:'請先在右邊勾選要執行的任務';
+  document.title=running?`${mmss(remain)} 專注中`:'番茄待辦';
+}
+function renderTasks(){
+  const ul=$('list');
+  if(!S.tasks.length){ul.innerHTML='<div class="empty">還沒有任務，先新增一個吧</div>'}
+  else ul.innerHTML=S.tasks.map(t=>`<li class="${t.done?'done':''} ${t.id===selId?'sel':''}" data-id="${t.id}">
+    <label class="pick"><input type="radio" name="cur" data-a="pick" ${t.id===selId?'checked':''} ${t.done||busy()?'disabled':''}><span>執行</span></label>
+    <span class="t">${esc(t.text)}</span>
+    <span class="n">${t.pomos?'🍅×'+t.pomos:''}</span>
+    <label class="pick"><input type="checkbox" data-a="done" ${t.done?'checked':''}><span>完成</span></label>
+    <button type="button" data-a="del" ${busy()&&t.id===focusId?'disabled':''} aria-label="刪除 ${esc(t.text)}">刪除</button></li>`).join('');
+  $('sDone').textContent=S.tasks.filter(t=>t.done).length+' / '+S.tasks.length;
+}
+function renderStats(){$('sToday').textContent=S.days[today()]||0;$('sTotal').textContent=S.total}
+function renderSkins(){
+  $('tom').innerHTML=tomato(S.skin);
+  $('sgrid').innerHTML=SKINS.map(s=>{
+    const lock=s.need>S.total;
+    return `<button type="button" class="skin ${lock?'lock':''} ${s.id===S.skin?'on':''}" data-skin="${s.id}" ${lock?'disabled':''}>
+      <svg viewBox="0 10 200 175" aria-hidden="true">${tomato(s.id)}</svg>
+      <span>${s.name}</span><small>${lock?'還差 '+(s.need-S.total)+' 顆':(s.id===S.skin?'使用中':'已解鎖')}</small></button>`}).join('');
+  const nx=SKINS.find(s=>s.need>S.total);
+  if(nx){const prev=[...SKINS].reverse().find(s=>s.need<=S.total);
+    $('next').textContent=`再完成 ${nx.need-S.total} 顆番茄，解鎖「${nx.name}」`;
+    $('barFill').style.width=((S.total-prev.need)/(nx.need-prev.need)*100)+'%';
+  }else{$('next').textContent='全部皮膚都解鎖了，太厲害了！';$('barFill').style.width='100%'}
+}
+function applyTheme(){
+  const dark=S.theme?S.theme==='dark':matchMedia('(prefers-color-scheme: dark)').matches;
+  document.documentElement.dataset.theme=dark?'dark':'light';
+  $('themeBtn').textContent=dark?'☀️ 淺色':'🌙 深色';
+  $('muteBtn').textContent=S.mute?'🔇 靜音中':'🔔 音效開';
+}
+function renderAll(){applyTheme();renderTimer();renderTasks();renderStats();renderSkins()}
+let tt;
+function toast(m){const e=$('toast');e.textContent=m;e.classList.add('show');clearTimeout(tt);tt=setTimeout(()=>e.classList.remove('show'),3200)}
+function confetti(){
+  const set=['🍅','✨','🎉','⭐'];
+  for(let i=0;i<28;i++){
+    const e=document.createElement('span');e.className='conf';e.textContent=set[i%4];
+    e.style.left=Math.random()*100+'vw';e.style.animationDelay=Math.random()*.7+'s';
+    document.body.appendChild(e);setTimeout(()=>e.remove(),3200);
+  }
+}
+
+/* ---------- 事件 ---------- */
+function addTask(){
+  const v=$('inp').value.trim();if(!v){$('inp').focus();return}
+  S.tasks.push({id:'t'+Date.now().toString(36)+Math.random().toString(36).slice(2,6),text:v,done:false,pomos:0});
+  $('inp').value='';$('inp').focus();save();renderTasks();
+}
+$('addBtn').onclick=addTask;
+$('inp').addEventListener('keydown',e=>{
+  if(e.key==='Enter'&&!e.isComposing&&e.keyCode!==229){e.preventDefault();addTask()}
+});
+const taskOf=e=>{const li=e.target.closest('li');return li&&S.tasks.find(x=>String(x.id)===li.dataset.id)};
+$('list').addEventListener('click',e=>{
+  if(e.target.dataset.a!=='del')return;
+  const t=taskOf(e);if(!t)return;
+  S.tasks=S.tasks.filter(x=>x!==t);
+  if(selId===t.id){selId=null;S.sel=null}
+  save();renderTasks();renderTimer();
+});
+$('list').addEventListener('change',e=>{
+  const t=taskOf(e),a=e.target.dataset.a;if(!t)return;
+  if(a==='pick'&&!busy()){selId=t.id;S.sel=t.id}
+  else if(a==='done'){t.done=e.target.checked;if(t.done&&selId===t.id){selId=null;S.sel=null}}
+  save();renderTasks();renderTimer();
+});
+$('startBtn').onclick=()=>running?pauseTimer():startTimer();
+$('resetBtn').onclick=resetTimer;
+$('testBox').checked=!!S.test;
+$('testBox').onchange=e=>{S.test=e.target.checked;remain=dur();save();renderTimer()};
+$('sgrid').addEventListener('click',e=>{
+  const b=e.target.closest('[data-skin]');if(!b||b.disabled)return;
+  S.skin=b.dataset.skin;save();renderSkins();
+});
+$('themeBtn').onclick=()=>{S.theme=document.documentElement.dataset.theme==='dark'?'light':'dark';save();applyTheme()};
+$('muteBtn').onclick=()=>{S.mute=!S.mute;save();applyTheme()};
+
+remain=dur();
+selId=(S.tasks.find(t=>t.id===S.sel&&!t.done)||{}).id||null;
+renderAll();
+</script>
+</body>
+</html>
